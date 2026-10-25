@@ -1,0 +1,4 @@
+Synthetic ProviderHub pull request acceptance fixture.
+Scope: isolated HOMOLOG repository only.
+No application source, credentials, customer data, workflows, or deployment targets.
+This fixture does not authorize merge or bypass human approval.
