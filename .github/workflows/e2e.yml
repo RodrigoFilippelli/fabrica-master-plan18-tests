@@ -1,0 +1,31 @@
+name: e2e
+run-name: e2e ${{ inputs.deployment_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: URL pública do ambiente sob teste (DEV)
+        required: true
+      deployment_id:
+        description: Deployment da Fábrica aguardando o gate
+        required: true
+      commit_sha:
+        description: Commit implantado no ambiente
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha || github.sha }}
+      - name: Smoke E2E (substitua pela suíte real)
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: curl -fsS --retry 3 --retry-delay 5 "$BASE_URL/health"
