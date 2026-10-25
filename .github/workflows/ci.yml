@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder build step
+        run: echo "Configure o build real conforme a stack definida no wizard WF-00B."
+      - name: Generate SBOM (CycloneDX)
+        uses: CycloneDX/gh-node-module-generatebom@v1
+        continue-on-error: true
+        with:
+          output: bom.xml
+
+  image:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image reference
+        id: ref
+        run: |
+          if [ ! -f Dockerfile ]; then
+            echo "Sem Dockerfile na raiz: nada para publicar (WF-05 ignora este build)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        if: steps.ref.outputs.skip != 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        if: steps.ref.outputs.skip != 'true'
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.ref.outputs.image }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
